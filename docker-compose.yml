@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile.prod
+    image: nginx-reverso:prod
+    container_name: nginx
+    networks:
+      - reverse-node
+    ports:
+      - "8080:80"
+  app:
+    build:
+      context: ./docker/node
+    container_name: app
+    tty: true
+    entrypoint: dockerize -wait tcp://db:3306 node index.js
+    volumes:
+      - ./docker/node:/usr/src/app
+    depends_on:
+      - db
+    networks:
+      - reverse-node
+  db:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0 --query_cache_type=1 --query_cache_limit=10485760 --query_cache_size=1048576000
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - ./.mysql:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - MYSQL_DATABASE=laravel
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - reverse-node
+networks:
+  reverse-node:
+    driver: bridge
