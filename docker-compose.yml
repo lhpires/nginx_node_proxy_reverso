@@ -19,6 +19,7 @@ services:
     entrypoint: dockerize -wait tcp://db:3306 node index.js
     volumes:
       - ./docker/node:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       - db
     networks:
